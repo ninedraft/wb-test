@@ -27,6 +27,8 @@ func main() {
 	}
 	limit := newLimiter(*kworkers)
 	var scanner *bufio.Scanner
+	// if list of links is not provided as flags,
+	// scanner reads from stdio
 	if *tlinks == "" {
 		scanner = bufio.NewScanner(os.Stdin)
 	} else {
