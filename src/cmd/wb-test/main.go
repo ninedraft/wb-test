@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -19,10 +20,14 @@ func init() {
 
 func main() {
 
-	// Initialization, if any.
-
+	kworkers := flag.Uint("k", 5, "limits the number of workers, > 0")
+	flag.Parse()
+	if *kworkers == 0 {
+		log.Printf("number of workers must be greater than 0!")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 	scanner := bufio.NewScanner(os.Stdin)
-
 	for scanner.Scan() {
 
 		// Do something with strings here.
@@ -53,12 +58,8 @@ func download(link string, wr io.Writer) error {
 	return err
 }
 
-func processLink(link string, limiter chan struct{}) (int, error) {
-	defer func() {
-		select {
-		case <-limiter:
-		}
-	}()
+func processLink(link string, done func()) (int, error) {
+	defer done()
 	buff := &bytes.Buffer{}
 	err := download(link, buff)
 	if err != nil {
