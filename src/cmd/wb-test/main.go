@@ -21,14 +21,19 @@ func init() {
 
 func main() {
 	kworkers := flag.Uint("k", 5, "limits the number of workers, > 0")
+	tlinks := flag.String("e", "", "list of links, separated by \\n")
 	flag.Parse()
 	if *kworkers == 0 {
 		log.Printf("number of workers must be greater than 0!")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	scanner := bufio.NewScanner(os.Stdin)
 	limit := newLimiter(*kworkers)
+	var scanner *bufio.Scanner
+	if *tlinks == "" {
+		scanner = bufio.NewScanner(os.Stdin)
+	}
+	scanner = bufio.NewScanner(bytes.NewReader([]byte(*tlinks)))
 	var total uint64 = 0
 
 	for scanner.Scan() {
