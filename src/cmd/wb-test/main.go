@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync/atomic"
 	"time"
 )
 
@@ -19,7 +20,6 @@ func init() {
 // Other funcs, if any.
 
 func main() {
-
 	kworkers := flag.Uint("k", 5, "limits the number of workers, > 0")
 	flag.Parse()
 	if *kworkers == 0 {
@@ -28,22 +28,17 @@ func main() {
 		os.Exit(1)
 	}
 	scanner := bufio.NewScanner(os.Stdin)
+	limit := newLimiter(*kworkers)
+	var total uint64 = 0
+
 	for scanner.Scan() {
-
-		// Do something with strings here.
-
+		go processLink(scanner.Text(), &total, limit.Start())
 	}
 	if err := scanner.Err(); err != nil {
 		log.Fatalln(err)
 	}
-
-	// Other code, if any.
-
-	total := 0
-
-	// Other code, if any.
-
-	log.Printf("Total: %v", total)
+	limit.Wait()
+	log.Printf("Total: %d", total)
 }
 
 func download(link string, wr io.Writer) error {
@@ -58,12 +53,15 @@ func download(link string, wr io.Writer) error {
 	return err
 }
 
-func processLink(link string, done func()) (int, error) {
+func processLink(link string, total *uint64, done func()) (int, error) {
 	defer done()
 	buff := &bytes.Buffer{}
 	err := download(link, buff)
 	if err != nil {
 		return -1, fmt.Errorf("error while downloading data from %q: %s", link, err)
 	}
-	return bytes.Count(buff.Bytes(), []byte("Go")), nil
+	n := bytes.Count(buff.Bytes(), []byte("Go"))
+	log.Printf("Count for %s: %d\n", link, n)
+	atomic.AddUint64(total, uint64(n))
+	return n, nil
 }
