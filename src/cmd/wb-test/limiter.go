@@ -41,9 +41,8 @@ func (lim *limiter) Start() func() {
 
 // Blocks until all workers complete their tasks.
 func (lim *limiter) Wait() {
-	// You haven't to close channel
-	// after limiter and "done" closures dropped
 	lim.waitGroup.Wait()
+	close(lim.limit)
 }
 
 // Returns a number of active workers.
