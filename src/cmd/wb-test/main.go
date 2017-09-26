@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -49,4 +51,18 @@ func download(link string, wr io.Writer) error {
 	defer resp.Body.Close()
 	_, err = io.Copy(wr, resp.Body)
 	return err
+}
+
+func processLink(link string, limiter chan struct{}) (int, error) {
+	defer func() {
+		select {
+		case <-limiter:
+		}
+	}()
+	buff := &bytes.Buffer{}
+	err := download(link, buff)
+	if err != nil {
+		return -1, fmt.Errorf("error while downloading data from %q: %s", link, err)
+	}
+	return bytes.Count(buff.Bytes(), []byte("Go")), nil
 }
